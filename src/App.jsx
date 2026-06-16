@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, Cpu, ShoppingCart, Activity, Zap, Search, UploadCloud, ShieldCheck, Tag, Filter, Plus, X, ImageIcon, CheckCircle, Loader, MessageCircle, User, Camera, AlertTriangle, RefreshCw, Play, FileText, Layout, Eye, MapPin } from 'lucide-react';
+import { Leaf, Cpu, ShoppingCart, Activity, Zap, Search, UploadCloud, ShieldCheck, Tag, Filter, Plus, X, ImageIcon, CheckCircle, Loader, MessageCircle, User, Camera, AlertTriangle, RefreshCw, Play, FileText, Layout, Eye, MapPin, Menu } from 'lucide-react';
 
 // --- Components ---
 
 const Navbar = () => {
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  
   const navItems = [
     { path: '/', label: 'Home', icon: <Leaf size={20} /> },
     { path: '/workspace', label: 'Scanner', icon: <Cpu size={20} /> },
@@ -16,25 +18,51 @@ const Navbar = () => {
   return (
     <div className="navbar-wrapper">
       <nav className="navbar">
-        <Link to="/" className="logo">
+        <Link to="/" className="logo" onClick={() => setIsOpen(false)}>
           <Zap color="var(--accent-primary)" fill="var(--accent-primary)" size={28} />
           E-Volve
         </Link>
-        <div className="nav-links">
+        
+        <div className={`nav-links ${isOpen ? 'open' : ''}`}>
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               className={location.pathname === item.path ? 'active' : ''}
+              onClick={() => setIsOpen(false)}
             >
               {item.icon} <span>{item.label}</span>
             </Link>
           ))}
+          
+          {/* Mobile CTA inside Drawer */}
+          <Link to="/workspace" className="btn btn-primary mobile-only-btn" onClick={() => setIsOpen(false)}>
+            Mulai Scan
+          </Link>
         </div>
-        <Link to="/workspace" className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
-          Mulai Scan
-        </Link>
+
+        <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+          {/* Desktop CTA */}
+          <Link to="/workspace" className="btn btn-primary desktop-only-btn" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
+            Mulai Scan
+          </Link>
+          
+          <button className="hamburger-btn" onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X size={24} color="var(--text-dark)"/> : <Menu size={24} color="var(--text-dark)"/>}
+          </button>
+        </div>
       </nav>
+      
+      {/* Mobile Menu Overlay */}
+      {isOpen && (
+        <div 
+          onClick={() => setIsOpen(false)}
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', 
+            background: 'rgba(0,0,0,0.4)', zIndex: 98, backdropFilter: 'blur(4px)'
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -174,7 +202,31 @@ Aturan penting:
     throw new Error("API Gemini mengembalikan respon kosong.");
   }
 
-  return JSON.parse(text.trim());
+  let jsonString = text.trim();
+  
+  // Membersihkan format markdown seperti ```json ... ``` jika masih terbawa
+  if (jsonString.startsWith('```json')) {
+    jsonString = jsonString.slice(7);
+  } else if (jsonString.startsWith('```')) {
+    jsonString = jsonString.slice(3);
+  }
+  if (jsonString.endsWith('```')) {
+    jsonString = jsonString.slice(0, -3);
+  }
+  
+  // Memastikan kita hanya memparsing objek JSON yang valid (mulai { dan diakhiri })
+  const firstBrace = jsonString.indexOf('{');
+  const lastBrace = jsonString.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+    jsonString = jsonString.slice(firstBrace, lastBrace + 1);
+  }
+
+  try {
+    return JSON.parse(jsonString.trim());
+  } catch (error) {
+    console.error("Gagal parse JSON dari Gemini:", jsonString);
+    throw new Error("Format respons tidak valid dari AI. Coba pindai ulang.");
+  }
 };
 
 const UserWorkspace = ({ addProduct }) => {
@@ -272,7 +324,6 @@ const UserWorkspace = ({ addProduct }) => {
 
   const handleSellComponent = (comp) => {
     const newProduct = {
-      id: Date.now() + Math.random(),
       name: comp.name,
       category: comp.category,
       price: comp.estimatedPriceIdr,
@@ -280,7 +331,8 @@ const UserWorkspace = ({ addProduct }) => {
       desc: `Komponen copotan dari perangkat ${deviceData.name}. Lolos scan fisik dan terverifikasi oleh E-Volve AI.`,
       aiVerified: true,
       sold: false,
-      seller: 'Saya (Penjual)'
+      seller: 'Saya (Penjual)',
+      image_url: null
     };
     addProduct(newProduct);
     navigate('/mart');
@@ -635,13 +687,7 @@ const UserWorkspace = ({ addProduct }) => {
   );
 };
 
-// --- Initial Mock Data for E-Mart ---
-const mockProducts = [
-  { id: 1, name: 'Samsung 16GB DDR4 3200MHz SODIMM', category: 'RAM', price: 'Rp 450.000', condition: '98% Normal', desc: 'Copotan laptop gaming Asus ROG. Pin mulus, lolos stress test AI.', aiVerified: true, sold: false, seller: 'TechnoJunkie_99' },
-  { id: 2, name: 'WD Blue SN550 500GB NVMe SSD', category: 'Storage', price: 'Rp 550.000', condition: 'Health 95%', desc: 'Health status terbaca 95% via CrystalDiskInfo. Suhu normal.', aiVerified: true, sold: false, seller: 'EcoStore.id' },
-  { id: 3, name: 'Panel Layar BOE 14.0" FHD IPS 60Hz', category: 'Display', price: 'Rp 850.000', condition: 'Tanpa Dead Pixel', desc: 'Layar mulus tanpa cacat fisik. Copotan Lenovo Thinkpad.', aiVerified: true, sold: false, seller: 'PartLestari' },
-  { id: 4, name: 'Intel Dual Band Wireless-AC 8265', category: 'Network', price: 'Rp 120.000', condition: 'Normal', desc: 'Kartu WiFi copotan. Sinyal stabil, mendukung frekuensi 5GHz.', aiVerified: true, sold: false, seller: 'AlexRepair' },
-];
+// Data ditarik dari API backend PostgreSQL
 
 const EMart = ({ products, setProducts }) => {
   const [category, setCategory] = useState('All');
@@ -674,7 +720,6 @@ const EMart = ({ products, setProducts }) => {
     setListingStep('analyzing');
     setTimeout(() => {
       setNewListing({
-        id: Date.now(),
         name: 'Crucial 8GB DDR3L 1600MHz Mac Compatible',
         category: 'RAM',
         price: 'Rp 225.000',
@@ -682,26 +727,94 @@ const EMart = ({ products, setProducts }) => {
         desc: 'Gemini Vision mendeteksi IC RAM utuh tanpa bekas gosong. Kompatibel untuk upgrade MacBook Pro lawas.',
         aiVerified: true,
         sold: false,
-        seller: 'Anda'
+        seller: 'Anda',
+        image_url: '/assets/components/ram.png'
       });
       setListingStep('result');
     }, 2500);
   };
 
-  const publishListing = () => {
-    setProducts([newListing, ...products]);
-    setIsModalOpen(false);
-    setListingStep('idle');
-    setNewListing(null);
+  const publishListing = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newListing.name,
+          category: newListing.category,
+          price: newListing.price,
+          condition: newListing.condition,
+          description: newListing.desc,
+          ai_verified: newListing.aiVerified,
+          sold: false,
+          seller: newListing.seller,
+          image_url: newListing.image_url || null
+        })
+      });
+      if (res.ok) {
+        const savedListing = await res.json();
+        setProducts([savedListing, ...products]);
+        setIsModalOpen(false);
+        setListingStep('idle');
+        setNewListing(null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleBuy = (product) => {
+  const handleBuy = async (product) => {
     setSelectedProduct(product);
     setCheckoutStep('processing');
-    setTimeout(() => {
-      setProducts(products.map(p => p.id === product.id ? { ...p, sold: true } : p));
-      setCheckoutStep('success');
-    }, 2500);
+    
+    try {
+      const res = await fetch('http://localhost:5000/api/payment/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: product.id,
+          name: product.name,
+          price: product.price
+        })
+      });
+      
+      const { token } = await res.json();
+      
+      window.snap.pay(token, {
+        onSuccess: async function(result) {
+          try {
+            await fetch(`http://localhost:5000/api/products/${product.id}/sold`, { method: 'PUT' });
+            setProducts(products.map(p => p.id === product.id ? { ...p, sold: true } : p));
+            setCheckoutStep('success');
+            setShowToast('Pembayaran Berhasil! Mengontak penjual...');
+            setTimeout(() => setShowToast(''), 3000);
+          } catch (e) {
+            console.error(e);
+            setCheckoutStep('error');
+          }
+        },
+        onPending: function(result) {
+          setShowToast('Menunggu pembayaran diselesaikan...');
+          setCheckoutStep('idle');
+          setTimeout(() => setShowToast(''), 3000);
+        },
+        onError: function(result) {
+          setShowToast('Pembayaran gagal.');
+          setCheckoutStep('idle');
+          setTimeout(() => setShowToast(''), 3000);
+        },
+        onClose: function() {
+          setShowToast('Pop-up pembayaran ditutup sebelum selesai.');
+          setCheckoutStep('idle');
+          setTimeout(() => setShowToast(''), 3000);
+        }
+      });
+    } catch (e) {
+      console.error(e);
+      setCheckoutStep('error');
+      setShowToast('Gagal memuat sistem pembayaran.');
+      setTimeout(() => setShowToast(''), 3000);
+    }
   };
 
   const handleChat = () => {
@@ -774,20 +887,25 @@ const EMart = ({ products, setProducts }) => {
       <div className="grid-3">
         {filteredProducts.map((p) => (
           <div key={p.id} className="glass-card animate-fade-in" style={{ padding: '0', display: 'flex', flexDirection: 'column', opacity: p.sold ? 0.5 : 1, filter: p.sold ? 'grayscale(100%)' : 'none' }}>
-            <div style={{ height: '180px', background: 'var(--bg-main)', display: 'flex', justifyContent: 'center', alignItems: 'center', borderBottom: '1px solid var(--border-light)', position: 'relative' }}>
-              {p.category === 'RAM' ? <Cpu size={80} color="var(--text-muted)" opacity={0.15} /> :
-               p.category === 'Storage' ? <UploadCloud size={80} color="var(--text-muted)" opacity={0.15} /> :
-               <Zap size={80} color="var(--text-muted)" opacity={0.15} />}
+            <div style={{ height: '180px', background: 'var(--bg-main)', display: 'flex', justifyContent: 'center', alignItems: 'center', borderBottom: '1px solid var(--border-light)', position: 'relative', overflow: 'hidden' }}>
+              {p.image_url ? (
+                <img src={p.image_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                p.category === 'RAM' ? <Cpu size={80} color="var(--text-muted)" opacity={0.15} /> :
+                p.category === 'Storage' ? <UploadCloud size={80} color="var(--text-muted)" opacity={0.15} /> :
+                p.category === 'Display' ? <Eye size={80} color="var(--text-muted)" opacity={0.15} /> :
+                <Zap size={80} color="var(--text-muted)" opacity={0.15} />
+              )}
                
                {p.sold && (
-                 <div style={{ position: 'absolute', background: 'rgba(17,24,39,0.8)', color: 'white', padding: '8px 24px', borderRadius: '99px', fontWeight: 'bold', letterSpacing: '2px' }}>
+                 <div style={{ position: 'absolute', background: 'rgba(17,24,39,0.8)', color: 'white', padding: '8px 24px', borderRadius: '99px', fontWeight: 'bold', letterSpacing: '2px', zIndex: 10 }}>
                    TERJUAL
                  </div>
                )}
             </div>
             <div style={{ padding: 'clamp(16px, 4vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                {p.aiVerified && (
+                {(p.aiVerified || p.ai_verified) && (
                   <div className="badge" style={{ fontSize: '0.75rem', padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)' }}>
                     <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
                     AI Verified
@@ -795,7 +913,7 @@ const EMart = ({ products, setProducts }) => {
                 )}
               </div>
               <h4 style={{ fontSize: '1.15rem', marginBottom: '8px', color: 'var(--text-dark)' }}>{p.name}</h4>
-              <p style={{ fontSize: '0.9rem', margin: '0 0 16px 0', color: 'var(--text-muted)', flex: 1 }}>{p.desc}</p>
+              <p style={{ fontSize: '0.9rem', margin: '0 0 16px 0', color: 'var(--text-muted)', flex: 1 }}>{p.desc || p.description}</p>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '16px', borderTop: '1px dashed var(--border-light)' }}>
                 <span style={{ color: 'var(--accent-primary)', fontWeight: '700', fontSize: '1.25rem' }}>{p.price}</span>
@@ -1044,10 +1162,39 @@ const EcoTracker = () => (
 );
 
 function App() {
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState([]);
 
-  const addProduct = (newProduct) => {
-    setProducts([newProduct, ...products]);
+  useEffect(() => {
+    fetch('http://localhost:5000/api/products')
+      .then(res => res.json())
+      .then(data => setProducts(data))
+      .catch(err => console.error("Error fetching products:", err));
+  }, []);
+
+  const addProduct = async (newProduct) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newProduct.name,
+          category: newProduct.category,
+          price: newProduct.price,
+          condition: newProduct.condition,
+          description: newProduct.desc || newProduct.description,
+          ai_verified: newProduct.aiVerified || newProduct.ai_verified || false,
+          sold: false,
+          seller: newProduct.seller,
+          image_url: newProduct.image_url || null
+        })
+      });
+      if (res.ok) {
+        const savedProduct = await res.json();
+        setProducts(prev => [savedProduct, ...prev]);
+      }
+    } catch (error) {
+      console.error("Error adding product:", error);
+    }
   };
 
   return (
