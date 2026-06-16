@@ -250,6 +250,12 @@ p {
   padding: clamp(40px, 6vw, 60px) 0 clamp(80px, 10vw, 100px) 0;
 }
 
+@media (min-width: 769px) {
+  .mobile-drawer {
+    display: none !important;
+  }
+}
+
 /* Hero Section */
 .hero {
   min-height: 75vh;
@@ -332,6 +338,10 @@ p {
     display: flex !important;
     width: 100%;
     margin-top: auto; /* Push to bottom of menu */
+  }
+
+  .desktop-only-links {
+    display: none !important;
   }
 
   .nav-links {

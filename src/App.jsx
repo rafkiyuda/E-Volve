@@ -15,55 +15,67 @@ const Navbar = () => {
     { path: '/tracker', label: 'Tracker', icon: <Activity size={20} /> },
   ];
 
-  return (
-    <div className="navbar-wrapper">
-      <nav className="navbar">
-        <Link to="/" className="logo" onClick={() => setIsOpen(false)}>
-          <Zap color="var(--accent-primary)" fill="var(--accent-primary)" size={28} />
-          E-Volve
+  const renderNavLinks = (isMobile) => (
+    <>
+      {navItems.map((item) => (
+        <Link
+          key={item.path}
+          to={item.path}
+          className={location.pathname === item.path ? 'active' : ''}
+          onClick={() => setIsOpen(false)}
+        >
+          {item.icon} <span>{item.label}</span>
         </Link>
-        
-        <div className={`nav-links ${isOpen ? 'open' : ''}`}>
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={location.pathname === item.path ? 'active' : ''}
-              onClick={() => setIsOpen(false)}
-            >
-              {item.icon} <span>{item.label}</span>
-            </Link>
-          ))}
-          
-          {/* Mobile CTA inside Drawer */}
-          <Link to="/workspace" className="btn btn-primary mobile-only-btn" onClick={() => setIsOpen(false)}>
-            Mulai Scan
-          </Link>
-        </div>
+      ))}
+      {isMobile && (
+        <Link to="/workspace" className="btn btn-primary mobile-only-btn" onClick={() => setIsOpen(false)}>
+          Mulai Scan
+        </Link>
+      )}
+    </>
+  );
 
-        <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
-          {/* Desktop CTA */}
-          <Link to="/workspace" className="btn btn-primary desktop-only-btn" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
-            Mulai Scan
+  return (
+    <>
+      <div className="navbar-wrapper">
+        <nav className="navbar">
+          <Link to="/" className="logo" onClick={() => setIsOpen(false)}>
+            <Zap color="var(--accent-primary)" fill="var(--accent-primary)" size={28} />
+            E-Volve
           </Link>
           
-          <button className="hamburger-btn" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={24} color="var(--text-dark)"/> : <Menu size={24} color="var(--text-dark)"/>}
-          </button>
-        </div>
-      </nav>
+          <div className="nav-links desktop-only-links">
+            {renderNavLinks(false)}
+          </div>
+          <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+            <Link to="/workspace" className="btn btn-primary desktop-only-btn" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
+              Mulai Scan
+            </Link>
+            
+            <button className="hamburger-btn" onClick={() => setIsOpen(!isOpen)}>
+              {isOpen ? <X size={24} color="var(--text-dark)"/> : <Menu size={24} color="var(--text-dark)"/>}
+            </button>
+          </div>
+        </nav>
+      </div>
       
       {/* Mobile Menu Overlay */}
       {isOpen && (
         <div 
           onClick={() => setIsOpen(false)}
+          className="mobile-overlay"
           style={{
             position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh', 
             background: 'rgba(0,0,0,0.4)', zIndex: 98, backdropFilter: 'blur(4px)'
           }}
         />
       )}
-    </div>
+
+      {/* Mobile Drawer */}
+      <div className={`nav-links mobile-drawer ${isOpen ? 'open' : ''}`} style={{ zIndex: 99 }}>
+        {renderNavLinks(true)}
+      </div>
+    </>
   );
 };
 
