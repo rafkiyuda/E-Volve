@@ -134,7 +134,7 @@ Aturan penting:
 1. JANGAN membungkus output JSON dalam format markdown \`\`\`json. Output harus berupa raw string JSON yang valid agar langsung dapat di-parse dengan JSON.parse().
 2. Deskripsi komponen dan instruksi harus jelas, profesional, dan dalam Bahasa Indonesia.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
   const requestBody = {
     contents: [
