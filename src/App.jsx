@@ -736,7 +736,7 @@ const EMart = ({ products, setProducts }) => {
 
   const publishListing = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/products', {
+      const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -768,7 +768,7 @@ const EMart = ({ products, setProducts }) => {
     setCheckoutStep('processing');
     
     try {
-      const res = await fetch('http://localhost:5000/api/payment/token', {
+      const res = await fetch('/api/payment/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -783,7 +783,7 @@ const EMart = ({ products, setProducts }) => {
       window.snap.pay(token, {
         onSuccess: async function(result) {
           try {
-            await fetch(`http://localhost:5000/api/products/${product.id}/sold`, { method: 'PUT' });
+            await fetch(`/api/products/${product.id}/sold`, { method: 'PUT' });
             setProducts(products.map(p => p.id === product.id ? { ...p, sold: true } : p));
             setCheckoutStep('success');
             setShowToast('Pembayaran Berhasil! Mengontak penjual...');
@@ -1165,7 +1165,7 @@ function App() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/products')
+    fetch('/api/products')
       .then(res => res.json())
       .then(data => setProducts(data))
       .catch(err => console.error("Error fetching products:", err));
@@ -1173,7 +1173,7 @@ function App() {
 
   const addProduct = async (newProduct) => {
     try {
-      const res = await fetch('http://localhost:5000/api/products', {
+      const res = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
