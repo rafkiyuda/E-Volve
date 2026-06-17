@@ -344,10 +344,29 @@ const UserWorkspace = ({ addProduct }) => {
       aiVerified: true,
       sold: false,
       seller: 'Saya (Penjual)',
-      image_url: null
+      image_url: null,
+      latitude: null,
+      longitude: null
     };
-    addProduct(newProduct);
-    navigate('/mart');
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          newProduct.latitude = pos.coords.latitude;
+          newProduct.longitude = pos.coords.longitude;
+          addProduct(newProduct);
+          navigate('/mart');
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          addProduct(newProduct);
+          navigate('/mart');
+        }
+      );
+    } else {
+      addProduct(newProduct);
+      navigate('/mart');
+    }
   };
 
   const getSafetyBadgeStyle = (level) => {
@@ -701,7 +720,7 @@ const UserWorkspace = ({ addProduct }) => {
 
 // Data ditarik dari API backend PostgreSQL
 
-const EMart = ({ products, setProducts }) => {
+const EMart = ({ products, setProducts, fetchProducts }) => {
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
   
@@ -709,6 +728,19 @@ const EMart = ({ products, setProducts }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [listingStep, setListingStep] = useState('idle');
   const [newListing, setNewListing] = useState(null);
+
+  // Hyper-Local Search State
+  const [locationState, setLocationState] = useState({ lat: null, lng: null });
+  const [radius, setRadius] = useState(10);
+  const [isLocating, setIsLocating] = useState(false);
+
+  useEffect(() => {
+    if (locationState.lat && locationState.lng) {
+      fetchProducts(locationState.lat, locationState.lng, radius);
+    } else {
+      fetchProducts();
+    }
+  }, [locationState, radius]);
 
   // Product Detail State
   const [viewingProduct, setViewingProduct] = useState(null);
@@ -727,6 +759,29 @@ const EMart = ({ products, setProducts }) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  const handleGetLocation = () => {
+    setIsLocating(true);
+    if (!navigator.geolocation) {
+      setShowToast('Browser Anda tidak mendukung fitur lokasi.');
+      setIsLocating(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocationState({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setIsLocating(false);
+        setShowToast('Lokasi berhasil ditemukan!');
+        setTimeout(() => setShowToast(''), 3000);
+      },
+      (err) => {
+        console.error(err);
+        setShowToast('Gagal mendapatkan lokasi. Pastikan izin GPS diberikan.');
+        setIsLocating(false);
+        setTimeout(() => setShowToast(''), 3000);
+      }
+    );
+  };
 
   const handleSimulateAI = () => {
     setListingStep('analyzing');
@@ -760,7 +815,9 @@ const EMart = ({ products, setProducts }) => {
           ai_verified: newListing.aiVerified,
           sold: false,
           seller: newListing.seller,
-          image_url: newListing.image_url || null
+          image_url: newListing.image_url || null,
+          latitude: locationState.lat || null,
+          longitude: locationState.lng || null
         })
       });
       if (res.ok) {
@@ -861,6 +918,43 @@ const EMart = ({ products, setProducts }) => {
         </button>
       </div>
 
+      {/* Hyper-Local Search Filter */}
+      <div className="glass-card" style={{ padding: '20px', marginBottom: '24px', background: locationState.lat ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-card)', border: locationState.lat ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-light)' }}>
+        <div className="flex-mobile-col" style={{ justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+          <div>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={20} color="var(--accent-primary)" /> Hyper-Local Search
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>Cari komponen terdekat untuk hemat ongkos kirim.</p>
+          </div>
+          
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', width: '100%', justifyContent: 'flex-end' }}>
+            {locationState.lat ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <label style={{ fontSize: '0.9rem', fontWeight: '500' }}>Radius: {radius} km</label>
+                  <input 
+                    type="range" 
+                    min="5" max="50" step="5" 
+                    value={radius} 
+                    onChange={(e) => setRadius(parseInt(e.target.value))}
+                    style={{ accentColor: 'var(--accent-primary)', width: '120px' }}
+                  />
+                </div>
+                <button className="btn btn-outline" onClick={() => { setLocationState({lat: null, lng: null}); setShowToast('Pencarian area dimatikan.'); setTimeout(() => setShowToast(''), 3000); }} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                  <X size={16} style={{ marginRight: '6px' }} /> Matikan
+                </button>
+              </>
+            ) : (
+              <button className="btn btn-outline" onClick={handleGetLocation} disabled={isLocating} style={{ padding: '10px 20px', fontSize: '0.9rem', borderColor: 'var(--accent-primary)', color: 'var(--accent-primary)' }}>
+                {isLocating ? <Loader size={16} className="animate-spin" style={{ marginRight: '8px' }} /> : <MapPin size={16} style={{ marginRight: '8px' }} />}
+                {isLocating ? 'Mencari...' : 'Gunakan Lokasi Saat Ini'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Filters & Search */}
       <div className="glass-card" style={{ padding: '20px', marginBottom: '32px', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', flexWrap: 'wrap' }}>
@@ -917,12 +1011,20 @@ const EMart = ({ products, setProducts }) => {
             </div>
             <div style={{ padding: 'clamp(16px, 4vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                {(p.aiVerified || p.ai_verified) && (
-                  <div className="badge" style={{ fontSize: '0.75rem', padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)' }}>
-                    <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
-                    AI Verified
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(p.aiVerified || p.ai_verified) && (
+                    <div className="badge" style={{ fontSize: '0.75rem', padding: '6px 12px', background: 'rgba(16, 185, 129, 0.1)' }}>
+                      <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
+                      AI Verified
+                    </div>
+                  )}
+                  {p.distance != null && (
+                    <div className="badge" style={{ fontSize: '0.75rem', padding: '6px 12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                      <MapPin size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} />
+                      {parseFloat(p.distance).toFixed(1)} km
+                    </div>
+                  )}
+                </div>
               </div>
               <h4 style={{ fontSize: '1.15rem', marginBottom: '8px', color: 'var(--text-dark)' }}>{p.name}</h4>
               <p style={{ fontSize: '0.9rem', margin: '0 0 16px 0', color: 'var(--text-muted)', flex: 1 }}>{p.desc || p.description}</p>
@@ -1176,11 +1278,19 @@ const EcoTracker = () => (
 function App() {
   const [products, setProducts] = useState([]);
 
-  useEffect(() => {
-    fetch('/api/products')
+  const fetchProducts = (lat, lng, radius) => {
+    let url = '/api/products';
+    if (lat && lng && radius) {
+      url += `?lat=${lat}&lng=${lng}&radius=${radius}`;
+    }
+    fetch(url)
       .then(res => res.json())
       .then(data => setProducts(data))
       .catch(err => console.error("Error fetching products:", err));
+  };
+
+  useEffect(() => {
+    fetchProducts();
   }, []);
 
   const addProduct = async (newProduct) => {
@@ -1197,7 +1307,9 @@ function App() {
           ai_verified: newProduct.aiVerified || newProduct.ai_verified || false,
           sold: false,
           seller: newProduct.seller,
-          image_url: newProduct.image_url || null
+          image_url: newProduct.image_url || null,
+          latitude: newProduct.latitude || null,
+          longitude: newProduct.longitude || null
         })
       });
       if (res.ok) {
@@ -1215,7 +1327,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/workspace" element={<UserWorkspace addProduct={addProduct} />} />
-        <Route path="/mart" element={<EMart products={products} setProducts={setProducts} />} />
+        <Route path="/mart" element={<EMart products={products} setProducts={setProducts} fetchProducts={fetchProducts} />} />
         <Route path="/tracker" element={<EcoTracker />} />
       </Routes>
     </div>

@@ -33,8 +33,38 @@ pool.connect((err) => {
 
 app.get('/api/products', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM products ORDER BY id DESC');
-    res.json(result.rows);
+    const { lat, lng, radius } = req.query;
+    
+    if (lat && lng && radius) {
+      const parsedLat = parseFloat(lat);
+      const parsedLng = parseFloat(lng);
+      const parsedRadius = parseFloat(radius);
+      
+      const query = `
+        SELECT *, (
+          6371 * acos(
+            cos(radians($1)) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians($2)) +
+            sin(radians($1)) * sin(radians(latitude))
+          )
+        ) AS distance
+        FROM products
+        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        AND (
+          6371 * acos(
+            cos(radians($1)) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians($2)) +
+            sin(radians($1)) * sin(radians(latitude))
+          )
+        ) <= $3
+        ORDER BY distance ASC
+      `;
+      const result = await pool.query(query, [parsedLat, parsedLng, parsedRadius]);
+      res.json(result.rows);
+    } else {
+      const result = await pool.query('SELECT * FROM products ORDER BY id DESC');
+      res.json(result.rows);
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -43,12 +73,12 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', async (req, res) => {
   try {
-    const { name, category, price, condition, description, ai_verified, sold, seller, image_url } = req.body;
+    const { name, category, price, condition, description, ai_verified, sold, seller, image_url, latitude, longitude } = req.body;
     
     const result = await pool.query(
-      `INSERT INTO products (name, category, price, condition, description, ai_verified, sold, seller, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [name, category, price, condition, description, ai_verified, sold, seller, image_url]
+      `INSERT INTO products (name, category, price, condition, description, ai_verified, sold, seller, image_url, latitude, longitude)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [name, category, price, condition, description, ai_verified, sold, seller, image_url, latitude || null, longitude || null]
     );
     
     res.status(201).json(result.rows[0]);
