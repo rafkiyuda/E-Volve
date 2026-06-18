@@ -99,10 +99,10 @@ const UserPortal = () => {
   if (loading || !dashboardData) return <div className="page-section flex-center"><h3>Loading data...</h3></div>;
 
   return (
-    <div className="app-container page-section animate-fade-in" style={{ paddingTop: '40px', paddingBottom: '40px', minHeight: '100vh', display: 'flex', gap: '32px', alignItems: 'flex-start', background: 'var(--bg-main)' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', minHeight: '100vh', width: '100%', background: 'var(--bg-main)' }}>
       
-      {/* Sidebar (ERP Style) */}
-      <div className="glass-card" style={{ width: '280px', flexShrink: 0, padding: '32px 24px', position: 'sticky', top: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      {/* Sidebar (ERP Style - Full Height Edge) */}
+      <div style={{ width: '280px', flexShrink: 0, padding: '32px 24px', background: 'var(--bg-card)', borderRight: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '32px', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ 
             width: '80px', height: '80px', borderRadius: '50%', background: 'var(--accent-primary)', color: '#fff', 
@@ -160,7 +160,7 @@ const UserPortal = () => {
       </div>
 
       {/* Main Content Area */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', padding: '40px 48px', overflowY: 'auto' }}>
         
         {/* TAB: DASHBOARD */}
         {activeTab === 'dashboard' && (
