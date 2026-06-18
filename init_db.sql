@@ -4,6 +4,10 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255),
   auth_provider VARCHAR(50) DEFAULT 'local',
+  balance DECIMAL(15,2) DEFAULT 0,
+  address TEXT,
+  bank_name VARCHAR(100),
+  bank_account VARCHAR(100),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -17,9 +21,29 @@ CREATE TABLE IF NOT EXISTS products (
   ai_verified BOOLEAN DEFAULT false,
   sold BOOLEAN DEFAULT false,
   seller VARCHAR(100) NOT NULL,
+  seller_id INTEGER,
   image_url TEXT,
   latitude DECIMAL(10, 8),
   longitude DECIMAL(11, 8)
+);
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id SERIAL PRIMARY KEY,
+  buyer_id INTEGER NOT NULL,
+  seller_id INTEGER NOT NULL,
+  product_id INTEGER NOT NULL,
+  amount DECIMAL(15,2) NOT NULL,
+  status VARCHAR(50) DEFAULT 'success',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS tickets (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  status VARCHAR(50) DEFAULT 'open',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 TRUNCATE TABLE products RESTART IDENTITY CASCADE;

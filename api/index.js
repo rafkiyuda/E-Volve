@@ -139,6 +139,102 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
+// --- Middleware ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Akses ditolak. Token tidak ada.' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token tidak valid.' });
+    req.user = user;
+    next();
+  });
+};
+
+// --- User Portal Routes ---
+app.get('/api/user/dashboard', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const userRes = await pool.query('SELECT balance, address, bank_name, bank_account, email FROM users WHERE id = $1', [userId]);
+    const userData = userRes.rows[0];
+
+    const salesRes = await pool.query('SELECT COALESCE(SUM(amount), 0) as total_sales, COUNT(id) as total_items_sold FROM transactions WHERE seller_id = $1 AND status = $2', [userId, 'success']);
+    const salesData = salesRes.rows[0];
+
+    const purchasesRes = await pool.query('SELECT COALESCE(SUM(amount), 0) as total_purchases, COUNT(id) as total_items_bought FROM transactions WHERE buyer_id = $1 AND status = $2', [userId, 'success']);
+    const purchasesData = purchasesRes.rows[0];
+
+    const historyRes = await pool.query(`
+      SELECT t.*, p.name as product_name
+      FROM transactions t
+      JOIN products p ON t.product_id = p.id
+      WHERE t.buyer_id = $1 OR t.seller_id = $1
+      ORDER BY t.created_at DESC LIMIT 5
+    `, [userId]);
+    const historyData = historyRes.rows;
+
+    res.json({
+      email: userData.email,
+      balance: userData.balance,
+      address: userData.address,
+      bank_name: userData.bank_name,
+      bank_account: userData.bank_account,
+      sales: salesData,
+      purchases: purchasesData,
+      history: historyData
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { address, bank_name, bank_account, full_name } = req.body;
+    
+    await pool.query(
+      'UPDATE users SET address = $1, bank_name = $2, bank_account = $3, full_name = $4 WHERE id = $5',
+      [address, bank_name, bank_account, full_name, userId]
+    );
+    
+    res.json({ message: 'Profil berhasil diperbarui' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/tickets', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { subject, description } = req.body;
+    
+    const result = await pool.query(
+      'INSERT INTO tickets (user_id, subject, description) VALUES ($1, $2, $3) RETURNING *',
+      [userId, subject, description]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/tickets', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await pool.query('SELECT * FROM tickets WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/products', async (req, res) => {
   try {
     const { lat, lng, radius } = req.query;

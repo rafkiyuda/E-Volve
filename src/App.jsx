@@ -3,6 +3,7 @@ import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Leaf, Cpu, ShoppingCart, Activity, Zap, Search, UploadCloud, ShieldCheck, Tag, Filter, Plus, X, ImageIcon, CheckCircle, Loader, MessageCircle, User, Camera, AlertTriangle, RefreshCw, Play, FileText, Layout, Eye, MapPin, Menu, LogOut, LogIn } from 'lucide-react';
 import { LoginPage, RegisterPage } from './Auth';
 import { useAuth } from './AuthContext';
+import UserPortal from './UserPortal';
 
 // --- Components ---
 
@@ -66,7 +67,10 @@ const ProfileMenu = ({ user, logout }) => {
             <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{user.email}</p>
           </div>
           <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
-          <button onClick={logout} className="btn btn-outline" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center' }}>
+          <Link to="/portal" style={{ textDecoration: 'none', color: 'var(--text-dark)', padding: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>
+            <User size={16} style={{ marginRight: '8px' }} /> Dashboard Akun
+          </Link>
+          <button onClick={logout} className="btn btn-outline" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
             <LogOut size={16} style={{ marginRight: '8px' }} /> Keluar
           </button>
         </div>
@@ -882,6 +886,7 @@ const UserWorkspace = ({ addProduct }) => {
 const EMart = ({ products, setProducts, fetchProducts }) => {
   const [category, setCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const { user } = useAuth();
   
   // Smart Listing Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1011,7 +1016,11 @@ const EMart = ({ products, setProducts, fetchProducts }) => {
       window.snap.pay(token, {
         onSuccess: async function(result) {
           try {
-            await fetch(`/api/products/${product.id}/sold`, { method: 'PUT' });
+            await fetch(`/api/products/${product.id}/sold`, { 
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ buyer_id: user ? user.id : null })
+            });
             setProducts(products.map(p => p.id === product.id ? { ...p, sold: true } : p));
             setCheckoutStep('success');
             setShowToast('Pembayaran Berhasil! Mengontak penjual...');
@@ -1470,6 +1479,7 @@ const Footer = () => (
 
 function App() {
   const [products, setProducts] = useState([]);
+  const { user } = useAuth();
 
   const fetchProducts = (lat, lng, radius) => {
     let url = '/api/products';
@@ -1500,6 +1510,7 @@ function App() {
           ai_verified: newProduct.aiVerified || newProduct.ai_verified || false,
           sold: false,
           seller: newProduct.seller,
+          seller_id: user ? user.id : null,
           image_url: newProduct.image_url || null,
           latitude: newProduct.latitude || null,
           longitude: newProduct.longitude || null
@@ -1521,6 +1532,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/portal" element={<UserPortal />} />
         <Route path="/workspace" element={<UserWorkspace addProduct={addProduct} />} />
         <Route path="/mart" element={<EMart products={products} setProducts={setProducts} fetchProducts={fetchProducts} />} />
         <Route path="/tracker" element={<EcoTracker />} />
