@@ -6,6 +6,75 @@ import { useAuth } from './AuthContext';
 
 // --- Components ---
 
+const ProfileMenu = ({ user, logout }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const initials = user.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'U';
+
+  return (
+    <div ref={menuRef} style={{ position: 'relative' }} className="desktop-only-btn">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ 
+          background: 'var(--accent-primary)', 
+          color: '#fff', 
+          width: '40px', 
+          height: '40px', 
+          borderRadius: '50%', 
+          border: 'none', 
+          fontWeight: 'bold', 
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1rem',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+        }}
+      >
+        {initials}
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '52px',
+          right: '0',
+          background: 'var(--bg-main)',
+          border: '1px solid var(--border-light)',
+          borderRadius: '12px',
+          padding: '16px',
+          minWidth: '220px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '0.95rem', color: 'var(--text-dark)', wordBreak: 'break-word', lineHeight: '1.2' }}>{user.full_name}</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>{user.email}</p>
+          </div>
+          <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
+          <button onClick={logout} className="btn btn-outline" style={{ width: '100%', padding: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center' }}>
+            <LogOut size={16} style={{ marginRight: '8px' }} /> Keluar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Navbar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -52,14 +121,7 @@ const Navbar = () => {
           </div>
           <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
             {user ? (
-              <div className="desktop-only-btn" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <User size={16} /> {user.full_name}
-                </span>
-                <button onClick={logout} className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                  <LogOut size={16} style={{ marginRight: '6px' }} /> Keluar
-                </button>
-              </div>
+              <ProfileMenu user={user} logout={logout} />
             ) : (
               <div className="desktop-only-btn" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Link to="/login" className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
