@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { Wallet, ShoppingBag, Package, Settings, LifeBuoy, AlertCircle, CheckCircle, Clock, Layout } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Wallet, ShoppingBag, Package, Settings, LifeBuoy, AlertCircle, CheckCircle, Clock, Layout, Home, LogOut } from 'lucide-react';
 
 const UserPortal = () => {
   const { user, token, login } = useAuth();
@@ -98,10 +99,10 @@ const UserPortal = () => {
   if (loading || !dashboardData) return <div className="page-section flex-center"><h3>Loading data...</h3></div>;
 
   return (
-    <div className="app-container page-section animate-fade-in" style={{ paddingTop: '100px', minHeight: '80vh', display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
+    <div className="app-container page-section animate-fade-in" style={{ paddingTop: '40px', paddingBottom: '40px', minHeight: '100vh', display: 'flex', gap: '32px', alignItems: 'flex-start', background: 'var(--bg-main)' }}>
       
       {/* Sidebar (ERP Style) */}
-      <div className="glass-card" style={{ width: '280px', flexShrink: 0, padding: '32px 24px', position: 'sticky', top: '100px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div className="glass-card" style={{ width: '280px', flexShrink: 0, padding: '32px 24px', position: 'sticky', top: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ 
             width: '80px', height: '80px', borderRadius: '50%', background: 'var(--accent-primary)', color: '#fff', 
@@ -148,6 +149,13 @@ const UserPortal = () => {
           >
             <LifeBuoy size={20} /> Bantuan & Laporan
           </button>
+        </div>
+        
+        <div style={{ marginTop: 'auto', paddingTop: '24px', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '12px', border: 'none', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', fontWeight: '600', textDecoration: 'none', transition: 'all 0.2s' }}>
+            <Home size={20} /> Kembali ke Beranda
+          </Link>
+          <button onClick={() => { /* Wait, I don't have logout here. Use auth context? We can use the context login(null) but useAuth provides logout maybe? No, logout is in Navbar. Let's just use home link */ }} style={{ display: 'none' }}></button>
         </div>
       </div>
 

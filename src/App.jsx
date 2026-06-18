@@ -1480,6 +1480,8 @@ const Footer = () => (
 function App() {
   const [products, setProducts] = useState([]);
   const { user } = useAuth();
+  const location = useLocation();
+  const isPortal = location.pathname.startsWith('/portal');
 
   const fetchProducts = (lat, lng, radius) => {
     let url = '/api/products';
@@ -1527,7 +1529,7 @@ function App() {
 
   return (
     <div style={{ padding: 0 }}>
-      <Navbar />
+      {!isPortal && <Navbar />}
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -1537,7 +1539,7 @@ function App() {
         <Route path="/mart" element={<EMart products={products} setProducts={setProducts} fetchProducts={fetchProducts} />} />
         <Route path="/tracker" element={<EcoTracker />} />
       </Routes>
-      <Footer />
+      {!isPortal && <Footer />}
     </div>
   );
 }
