@@ -12,11 +12,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
+    "bcryptjs": "^3.0.3",
     "concurrently": "^10.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "framer-motion": "^11.0.8",
+    "google-auth-library": "^10.7.0",
+    "jsonwebtoken": "^9.0.3",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.344.0",
     "midtrans-client": "^1.4.3",
     "pg": "^8.21.0",

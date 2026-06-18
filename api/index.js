@@ -3,8 +3,14 @@ import cors from 'cors';
 import pg from 'pg';
 import dotenv from 'dotenv';
 import midtransClient from 'midtrans-client';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 
 dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || 'evolve_secret_key_123';
+const googleClient = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id');
 
 const snap = new midtransClient.Snap({
   isProduction: false,
@@ -23,11 +29,113 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-pool.connect((err) => {
+pool.connect((err, client, release) => {
   if (err) {
     console.error('Failed to connect to the database:', err.message);
   } else {
     console.log('Connected to PostgreSQL successfully');
+    client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        full_name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255),
+        auth_provider VARCHAR(50) DEFAULT 'local',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `).then(() => console.log('users table ensured')).catch(console.error).finally(() => release());
+  }
+});
+
+// --- Auth Routes ---
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { full_name, email, password } = req.body;
+    
+    // Check existing user
+    const exist = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (exist.rows.length > 0) {
+      return res.status(400).json({ error: 'Email sudah terdaftar.' });
+    }
+    
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+    
+    const result = await pool.query(
+      'INSERT INTO users (full_name, email, password_hash, auth_provider) VALUES ($1, $2, $3, $4) RETURNING id, full_name, email',
+      [full_name, email, password_hash, 'local']
+    );
+    
+    const user = result.rows[0];
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.status(201).json({ token, user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+    
+    if (!user) {
+      return res.status(400).json({ error: 'Kredensial tidak valid.' });
+    }
+    
+    if (user.auth_provider !== 'local') {
+      return res.status(400).json({ error: `Akun ini terdaftar dengan ${user.auth_provider}. Gunakan metode tersebut untuk login.` });
+    }
+    
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Kredensial tidak valid.' });
+    }
+    
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.json({ token, user: { id: user.id, full_name: user.full_name, email: user.email } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id'
+    });
+    
+    const payload = ticket.getPayload();
+    const email = payload.email;
+    const full_name = payload.name;
+    
+    // Check if user exists
+    let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    let user = result.rows[0];
+    
+    if (!user) {
+      // Create user if not exists
+      const insertResult = await pool.query(
+        'INSERT INTO users (full_name, email, password_hash, auth_provider) VALUES ($1, $2, $3, $4) RETURNING id, full_name, email',
+        [full_name, email, null, 'google']
+      );
+      user = insertResult.rows[0];
+    }
+    
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.json({ token, user: { id: user.id, full_name: user.full_name, email: user.email } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Google Auth Error' });
   }
 });
 

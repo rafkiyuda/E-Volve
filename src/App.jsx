@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Leaf, Cpu, ShoppingCart, Activity, Zap, Search, UploadCloud, ShieldCheck, Tag, Filter, Plus, X, ImageIcon, CheckCircle, Loader, MessageCircle, User, Camera, AlertTriangle, RefreshCw, Play, FileText, Layout, Eye, MapPin, Menu } from 'lucide-react';
+import { Leaf, Cpu, ShoppingCart, Activity, Zap, Search, UploadCloud, ShieldCheck, Tag, Filter, Plus, X, ImageIcon, CheckCircle, Loader, MessageCircle, User, Camera, AlertTriangle, RefreshCw, Play, FileText, Layout, Eye, MapPin, Menu, LogOut, LogIn } from 'lucide-react';
+import { LoginPage, RegisterPage } from './Auth';
+import { useAuth } from './AuthContext';
 
 // --- Components ---
 
 const Navbar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
   
   const navItems = [
     { path: '/', label: 'Home', icon: <Leaf size={20} /> },
@@ -48,6 +51,23 @@ const Navbar = () => {
             {renderNavLinks(false)}
           </div>
           <div style={{display: 'flex', gap: '16px', alignItems: 'center'}}>
+            {user ? (
+              <div className="desktop-only-btn" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <User size={16} /> {user.full_name}
+                </span>
+                <button onClick={logout} className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                  <LogOut size={16} style={{ marginRight: '6px' }} /> Keluar
+                </button>
+              </div>
+            ) : (
+              <div className="desktop-only-btn" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Link to="/login" className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                  Masuk
+                </Link>
+              </div>
+            )}
+            
             <Link to="/workspace" className="btn btn-primary desktop-only-btn" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
               Mulai Scan
             </Link>
@@ -125,6 +145,83 @@ const LandingPage = () => (
               <span style={{ color: 'var(--text-muted)' }}>Jejak Karbon Berkurang</span>
               <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)' }}>42.5 Ton</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Section: Cara Kerja E-Volve */}
+    <div style={{ marginTop: '80px' }}>
+      <div className="text-center mb-4">
+        <h2>Cara Kerja <span className="gradient-text">E-Volve</span></h2>
+        <p>Ubah perangkat mati Anda menjadi uang tunai dalam 3 langkah mudah.</p>
+      </div>
+      <div className="grid-3">
+        <div className="glass-card text-center">
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 16px auto' }}>
+            <Camera size={32} color="var(--accent-primary)" />
+          </div>
+          <h3>1. Pindai Perangkat</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Gunakan AI Scanner kami untuk memfoto perangkat elektronik bekas Anda. AI akan mengidentifikasi model dan menaksir harga komponen.</p>
+        </div>
+        <div className="glass-card text-center">
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 16px auto' }}>
+            <Cpu size={32} color="var(--accent-primary)" />
+          </div>
+          <h3>2. Bongkar Aman</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Ikuti panduan bongkar (teardown) langkah demi langkah yang aman. Kami memberi tahu Anda risiko keselamatan secara realtime.</p>
+        </div>
+        <div className="glass-card text-center">
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 16px auto' }}>
+            <ShoppingCart size={32} color="var(--accent-primary)" />
+          </div>
+          <h3>3. Jual Komponen</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Komponen yang berhasil dibongkar dan terverifikasi AI dapat langsung Anda jual ke E-Mart E-Volve ke komunitas teknisi.</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Section: Keuntungan */}
+    <div style={{ marginTop: '80px', marginBottom: '40px' }}>
+      <div className="text-center mb-4">
+        <h2>Keuntungan Menggunakan <span className="gradient-text">E-Volve</span></h2>
+        <p>Solusi cerdas untuk lingkungan dan dompet Anda.</p>
+      </div>
+      <div className="grid-2">
+        <div className="glass-card" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
+            <Activity size={24} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px 0' }}>Nilai Ekonomis Maksimal</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>Komponen hidup bernilai jauh lebih tinggi jika dijual satuan dibandingkan menjual perangkat mati sebagai rongsokan.</p>
+          </div>
+        </div>
+        <div className="glass-card" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
+            <ShieldCheck size={24} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px 0' }}>Verifikasi AI Terpercaya</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>Pembeli merasa aman karena kondisi komponen telah dipindai dan diverifikasi oleh sistem AI E-Volve.</p>
+          </div>
+        </div>
+        <div className="glass-card" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
+            <Leaf size={24} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px 0' }}>Kurangi E-Waste</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>Anda berkontribusi langsung menurunkan jumlah limbah beracun ke tempat pembuangan akhir mendukung sirkular ekonomi.</p>
+          </div>
+        </div>
+        <div className="glass-card" style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+          <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', borderRadius: '12px', color: 'var(--accent-primary)' }}>
+            <MapPin size={24} />
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 8px 0' }}>Koneksi Hyper-lokal</h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>Temukan pembeli komponen di sekitar Anda. Mengurangi biaya pengiriman dan menekan jejak karbon operasional.</p>
           </div>
         </div>
       </div>
@@ -1275,6 +1372,40 @@ const EcoTracker = () => (
   </div>
 );
 
+const Footer = () => (
+  <footer style={{ background: '#111827', color: '#f3f4f6', padding: '48px 24px 24px 24px', marginTop: '64px' }}>
+    <div className="app-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '32px', marginBottom: '40px' }}>
+      <div>
+        <div className="logo" style={{ color: 'white', marginBottom: '16px' }}>
+          <Zap color="var(--accent-primary)" fill="var(--accent-primary)" size={24} />
+          E-Volve
+        </div>
+        <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>
+          Platform sirkular ekonomi terdepan untuk mengurangi e-waste dan mengubah perangkat mati menjadi nilai nyata.
+        </p>
+      </div>
+      <div>
+        <h4 style={{ color: 'white', marginBottom: '16px', fontSize: '1.05rem' }}>Ekosistem</h4>
+        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <li><Link to="/workspace" style={{ color: '#9ca3af', transition: 'color 0.2s' }}>AI Scanner</Link></li>
+          <li><Link to="/mart" style={{ color: '#9ca3af', transition: 'color 0.2s' }}>E-Mart</Link></li>
+          <li><Link to="/tracker" style={{ color: '#9ca3af', transition: 'color 0.2s' }}>Eco Tracker</Link></li>
+        </ul>
+      </div>
+      <div>
+        <h4 style={{ color: 'white', marginBottom: '16px', fontSize: '1.05rem' }}>Hubungi Kami</h4>
+        <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '8px' }}>support@e-volve.com</p>
+        <p style={{ color: '#9ca3af', fontSize: '0.9rem' }}>+62 811 2345 6789</p>
+      </div>
+    </div>
+    <div style={{ borderTop: '1px solid #374151', paddingTop: '24px', textAlign: 'center' }}>
+      <p style={{ color: '#6b7280', fontSize: '0.85rem', margin: 0 }}>
+        &copy; {new Date().getFullYear()} E-Volve. Hak Cipta Dilindungi.
+      </p>
+    </div>
+  </footer>
+);
+
 function App() {
   const [products, setProducts] = useState([]);
 
@@ -1326,10 +1457,13 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/workspace" element={<UserWorkspace addProduct={addProduct} />} />
         <Route path="/mart" element={<EMart products={products} setProducts={setProducts} fetchProducts={fetchProducts} />} />
         <Route path="/tracker" element={<EcoTracker />} />
       </Routes>
+      <Footer />
     </div>
   );
 }
